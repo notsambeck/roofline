@@ -46,8 +46,10 @@ class RoofClassifier:
         self.model = RoofNet(freeze_backbone=False)
 
         if model_path is None:
-            # Default to weights/model.pt relative to package root
+            # Default to weights/model.pt, fall back to distributable weights
             model_path = Path(__file__).parent.parent / "weights" / "model.pt"
+            if not model_path.exists():
+                model_path = model_path.with_suffix(".pt.dist")
 
         if Path(model_path).exists():
             checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)

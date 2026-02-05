@@ -1,5 +1,6 @@
 data/
-weights/
+weights/*
+!weights/model.pt.dist
 __pycache__/
 *.egg-info/
 .venv/
