@@ -15,8 +15,8 @@ class RoofNet(nn.Module):
     Output: (batch, 4) logits for [flat, gable, complex, bug]
     """
 
-    CLASSES = ["flat", "gable", "complex", "bug"]
-    NUM_CLASSES = 4
+    CLASSES = ["flat", "gable", "complex"]
+    NUM_CLASSES = 3
     INPUT_SIZE = 224
 
     def __init__(self, freeze_backbone: bool = True):

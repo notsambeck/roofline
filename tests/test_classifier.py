@@ -38,7 +38,7 @@ class TestRoofClassifier:
         """Test that predicted class is one of the valid classes."""
         result = classifier.classify(dummy_image)
 
-        assert result["class"] in ["flat", "gable", "complex", "bug"]
+        assert result["class"] in ["flat", "gable", "complex"]
 
     def test_classify_confidence_range(self, classifier, dummy_image):
         """Test confidence is between 0 and 1."""
@@ -57,14 +57,14 @@ class TestRoofClassifier:
         """Test all classes present in probabilities."""
         result = classifier.classify(dummy_image)
 
-        assert set(result["probabilities"].keys()) == {"flat", "gable", "complex", "bug"}
+        assert set(result["probabilities"].keys()) == {"flat", "gable", "complex"}
 
     def test_classify_rgba_image(self, classifier, dummy_rgba_image):
         """Test classifier handles RGBA images (converts to RGB)."""
         result = classifier.classify(dummy_rgba_image)
 
         assert "class" in result
-        assert result["class"] in ["flat", "gable", "complex", "bug"]
+        assert result["class"] in ["flat", "gable", "complex"]
 
     def test_classify_batch_empty(self, classifier):
         """Test classify_batch with empty list."""

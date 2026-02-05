@@ -14,7 +14,7 @@ class TestRoofNet:
         x = torch.randn(batch_size, 3, 224, 224)
         output = model(x)
 
-        assert output.shape == (batch_size, 4)
+        assert output.shape == (batch_size, 3)
 
     def test_single_image(self):
         """Test forward pass with single image."""
@@ -22,12 +22,12 @@ class TestRoofNet:
         x = torch.randn(1, 3, 224, 224)
         output = model(x)
 
-        assert output.shape == (1, 4)
+        assert output.shape == (1, 3)
 
     def test_classes(self):
         """Test class constants."""
-        assert RoofNet.CLASSES == ["flat", "gable", "complex", "bug"]
-        assert RoofNet.NUM_CLASSES == 4
+        assert RoofNet.CLASSES == ["flat", "gable", "complex"]
+        assert RoofNet.NUM_CLASSES == 3
         assert RoofNet.INPUT_SIZE == 224
 
     def test_eval_mode(self):
@@ -39,7 +39,7 @@ class TestRoofNet:
         with torch.no_grad():
             output = model(x)
 
-        assert output.shape == (2, 4)
+        assert output.shape == (2, 3)
 
     def test_gradient_flow(self):
         """Test gradients flow through the model."""

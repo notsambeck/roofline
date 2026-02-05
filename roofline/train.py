@@ -94,7 +94,7 @@ def train(
     print(f"Loaded {len(full_dataset)} images")
 
     # Print class distribution
-    class_counts = [0] * 4
+    class_counts = [0] * 3
     for _, label in full_dataset.samples:
         class_counts[label] += 1
     for i, count in enumerate(class_counts):

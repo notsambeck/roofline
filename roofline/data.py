@@ -230,8 +230,6 @@ FOLDER_TO_CLASS = {
     "gable": "gable",
     "Complex_data": "complex",
     "complex": "complex",
-    "Bugs": "bug",
-    "bug": "bug",
 }
 
 
@@ -275,7 +273,7 @@ class RoofDataset(Dataset):
             bug/ or Bugs/
     """
 
-    CLASSES = ["flat", "gable", "complex", "bug"]
+    CLASSES = ["flat", "gable", "complex"]
 
     def __init__(
         self,

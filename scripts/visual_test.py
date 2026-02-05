@@ -54,7 +54,6 @@ def main():
         print("  data/Flat_data/")
         print("  data/Gable_hip_other/")
         print("  data/Complex_data/")
-        print("  data/Bugs/")
         sys.exit(1)
 
     # Load classifier
@@ -75,7 +74,7 @@ def main():
     # Track accuracy
     correct = 0
     total = 0
-    class_stats = {c: {"correct": 0, "total": 0} for c in ["flat", "gable", "complex", "bug"]}
+    class_stats = {c: {"correct": 0, "total": 0} for c in ["flat", "gable", "complex"]}
 
     for img_path, true_class in samples:
         # Load and classify
@@ -110,7 +109,7 @@ def main():
     print(f"Overall Accuracy: {correct}/{total} ({correct / total:.1%})")
     print()
     print("Per-class accuracy:")
-    for cls in ["flat", "gable", "complex", "bug"]:
+    for cls in ["flat", "gable", "complex"]:
         stats = class_stats[cls]
         if stats["total"] > 0:
             acc = stats["correct"] / stats["total"]
