@@ -11,6 +11,10 @@ A simple PyTorch CNN for classifying roof types from satellite/aerial imagery.
 | `complex` | Complex roof structures |
 | `bug` | Imagery artifacts or unclear cases |
 
+## Example Results
+
+![Test Results](test_results.png)
+
 ## Installation
 
 ```bash
