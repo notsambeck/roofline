@@ -10,6 +10,8 @@ A PyTorch CNN for classifying roof types from satellite/aerial imagery.
 | `gable` | Gable, hip, and other pitched roofs |
 | `complex` | Complex roof structures |
 
+Note: The original dataset included a "bug" category for imagery artifacts, but this was removed as it did not match our target domain requirements.
+
 ## Example Results
 
 ![Test Results](test_results.png)
@@ -101,17 +103,19 @@ Aggressive augmentation is applied during training for domain generalization:
 
 ## Model Architecture
 
-ResNet18 backbone (pretrained on ImageNet) with custom classifier head:
+Fine-tuned ResNet18 pretrained on ImageNet, with a custom classifier head:
 
 ```
-ResNet18 (pretrained, fine-tuned)
+ResNet18 (ImageNet pretrained, fine-tuned)
   │
   └─ fc: Dropout(0.5) → Linear(512→3)
 
 Output: 3 class logits
 ```
 
-Fine-tuning uses differential learning rates (backbone: 0.1x, head: 1x).
+Training uses differential learning rates to preserve pretrained features while adapting to roof imagery:
+- Backbone: 0.1x learning rate
+- Classifier head: 1.0x learning rate
 
 ## Development
 
