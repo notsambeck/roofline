@@ -1,6 +1,6 @@
 # Roofline
 
-A simple PyTorch CNN for classifying roof types from satellite/aerial imagery.
+A PyTorch CNN for classifying roof types from satellite/aerial imagery.
 
 ## Classes
 
@@ -9,7 +9,6 @@ A simple PyTorch CNN for classifying roof types from satellite/aerial imagery.
 | `flat` | Flat roofs |
 | `gable` | Gable, hip, and other pitched roofs |
 | `complex` | Complex roof structures |
-| `bug` | Imagery artifacts or unclear cases |
 
 ## Example Results
 
@@ -66,8 +65,7 @@ Expected dataset structure:
 dataset/
 ├── flat/
 ├── gable/
-├── complex/
-└── bug/
+└── complex/
 ```
 
 ### Training options
@@ -82,23 +80,38 @@ dataset/
 | `--val-split` | 0.2 | Validation split ratio |
 | `--device` | auto | Device (cuda/mps/cpu) |
 
+## Data Augmentation
+
+Aggressive augmentation is applied during training for domain generalization:
+
+![Augmentation Examples](augmentation_examples.png)
+
+| Augmentation | Probability | Parameters |
+|--------------|-------------|------------|
+| Horizontal/Vertical Flip | 50% | - |
+| Rotation | 100% | ±90° |
+| Color Jitter | 100% | brightness=0.2, contrast=0.8, saturation=1.0, hue=0.5 |
+| Grayscale | 30% | - |
+| Random Zoom | 30% | 60-140% scale |
+| Gaussian Blur | 50% | up to 10px radius |
+| Downscale | 50% | 30-100% (simulates low-res) |
+| Shadow | 30% | up to 40% coverage |
+| Tree Occlusion | 50% | up to 90% coverage |
+| Random Erasing | 30% | 2-20% area |
+
 ## Model Architecture
 
-RoofNet is a simple CNN with 4 convolutional blocks (~390K parameters):
+ResNet18 backbone (pretrained on ImageNet) with custom classifier head:
 
 ```
-Input (3, 224, 224)
+ResNet18 (pretrained, fine-tuned)
   │
-  ├─ Conv2d(3→32, 3×3) + BatchNorm + ReLU + MaxPool2d
-  ├─ Conv2d(32→64, 3×3) + BatchNorm + ReLU + MaxPool2d
-  ├─ Conv2d(64→128, 3×3) + BatchNorm + ReLU + MaxPool2d
-  ├─ Conv2d(128→256, 3×3) + BatchNorm + ReLU + MaxPool2d
-  │
-  ├─ AdaptiveAvgPool2d(1)
-  └─ Linear(256→4)
+  └─ fc: Dropout(0.5) → Linear(512→3)
 
-Output: 4 class logits
+Output: 3 class logits
 ```
+
+Fine-tuning uses differential learning rates (backbone: 0.1x, head: 1x).
 
 ## Development
 
@@ -112,7 +125,9 @@ uv run python scripts/visual_test.py
 
 ## Dataset
 
-This project was developed using the "Imagery dataset for rooftop detection and classification" containing 3,617 GeoTIFF images of rooftops from aerial imagery of Sofia, Bulgaria (10 cm/pixel resolution, captured 2020).
+Training data combines:
+- **Sofia, Bulgaria**: "Imagery dataset for rooftop detection and classification" - 3,157 GeoTIFF images (10 cm/pixel resolution, 2020)
+- **Portland, Oregon**: Additional samples for domain diversity
 
 > Hristov, E., Petrova-Antonova, D., Petrov, A., Borukova, M., & Shirinyan, E. (2023). *Imagery dataset for rooftop detection and classification* [Data set]. Zenodo. https://doi.org/10.5281/zenodo.7633594
 
