@@ -10,6 +10,88 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 
+class RandomDownscale:
+    """Random downscale then upscale (simulates lower resolution source)."""
+
+    def __init__(self, p: float = 0.5, min_scale: float = 0.3, max_scale: float = 1.0):
+        self.p = p
+        self.min_scale = min_scale
+        self.max_scale = max_scale
+
+    def __call__(self, img: Image.Image) -> Image.Image:
+        if random.random() > self.p:
+            return img
+
+        w, h = img.size
+        scale = random.uniform(self.min_scale, self.max_scale)
+
+        # Downscale
+        small_w = max(1, int(w * scale))
+        small_h = max(1, int(h * scale))
+        small = img.resize((small_w, small_h), Image.BILINEAR)
+
+        # Upscale back to original
+        return small.resize((w, h), Image.BILINEAR)
+
+
+class RandomBlur:
+    """Random Gaussian blur."""
+
+    def __init__(self, p: float = 0.5, max_radius: float = 10.0):
+        self.p = p
+        self.max_radius = max_radius
+
+    def __call__(self, img: Image.Image) -> Image.Image:
+        if random.random() > self.p:
+            return img
+        from PIL import ImageFilter
+        radius = random.uniform(0.5, self.max_radius)
+        return img.filter(ImageFilter.GaussianBlur(radius=radius))
+
+
+class RandomZoom:
+    """Random zoom in/out augmentation.
+
+    Zooms between min_scale and max_scale, padding or cropping as needed.
+    """
+
+    def __init__(self, p: float = 0.3, min_scale: float = 0.6, max_scale: float = 1.4):
+        self.p = p
+        self.min_scale = min_scale
+        self.max_scale = max_scale
+
+    def __call__(self, img: Image.Image) -> Image.Image:
+        if random.random() > self.p:
+            return img
+
+        w, h = img.size
+        scale = random.uniform(self.min_scale, self.max_scale)
+
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+
+        # Resize
+        resized = img.resize((new_w, new_h), Image.BILINEAR)
+
+        if scale > 1.0:
+            # Zoom in: crop center
+            left = (new_w - w) // 2
+            top = (new_h - h) // 2
+            result = resized.crop((left, top, left + w, top + h))
+        else:
+            # Zoom out: pad with edge pixels
+            result = Image.new("RGB", (w, h))
+            # Fill with average edge color
+            avg_color = tuple(int(c) for c in np.array(img).mean(axis=(0, 1)))
+            result.paste(avg_color, (0, 0, w, h))
+            # Paste resized in center
+            left = (w - new_w) // 2
+            top = (h - new_h) // 2
+            result.paste(resized, (left, top))
+
+        return result
+
+
 class RandomShadow:
     """Apply random shadow (darkened polygon) to image.
 
@@ -159,8 +241,12 @@ def get_train_transforms() -> transforms.Compose:
         transforms.Resize((224, 224)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
-        transforms.RandomRotation(15),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=1.0, hue=0.5),
+        transforms.RandomRotation(90),
+        transforms.ColorJitter(brightness=0.2, contrast=0.8, saturation=1.0, hue=0.5),
+        transforms.RandomGrayscale(p=0.3),
+        RandomZoom(p=0.3, min_scale=0.6, max_scale=1.4),
+        RandomBlur(p=0.5, max_radius=10.0),
+        RandomDownscale(p=0.5, min_scale=0.3, max_scale=1.0),
         RandomShadow(p=0.3, max_coverage=0.4),
         RandomTreeOcclusion(p=0.5, max_coverage=0.9),
         transforms.ToTensor(),
