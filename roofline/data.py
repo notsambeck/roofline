@@ -160,7 +160,7 @@ def get_train_transforms() -> transforms.Compose:
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.RandomRotation(15),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=1.0, hue=0.5),
         RandomShadow(p=0.3, max_coverage=0.4),
         RandomTreeOcclusion(p=0.5, max_coverage=0.9),
         transforms.ToTensor(),

@@ -135,14 +135,21 @@ def train(
 
     print(f"Train size: {train_size}, Val size: {val_size}")
 
-    # Create model (ResNet18 with frozen backbone)
-    model = RoofNet(freeze_backbone=True).to(device)
-    print(f"Using ResNet18 backbone (frozen)")
+    # Create model (ResNet18 with unfrozen backbone for fine-tuning)
+    model = RoofNet(freeze_backbone=False).to(device)
+    print(f"Using ResNet18 backbone (fine-tuning)")
     print(f"Trainable parameters: {model.count_parameters():,}")
 
-    # Loss and optimizer
+    # Loss and optimizer with differential learning rates
+    # Lower LR for pretrained backbone, higher for classifier head
+    backbone_params = [p for n, p in model.named_parameters() if 'fc' not in n]
+    head_params = [p for n, p in model.named_parameters() if 'fc' in n]
+
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam([
+        {'params': backbone_params, 'lr': lr * 0.1},  # backbone: 10x lower LR
+        {'params': head_params, 'lr': lr},             # head: normal LR
+    ])
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="max", factor=0.5, patience=3
     )
