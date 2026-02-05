@@ -19,7 +19,7 @@ A simple PyTorch CNN for classifying roof types from satellite/aerial imagery.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/roofline.git
+git clone https://github.com/notsambeck/roofline.git
 cd roofline
 
 # Install with uv
@@ -127,7 +127,7 @@ If you use this code in your research, please cite both this repository and the 
 ```bibtex
 @software{roofline,
   title = {Roofline: Roof Type Classifier},
-  url = {https://github.com/yourusername/roofline}
+  url = {https://github.com/notsambeck/roofline}
 }
 
 @dataset{hristov_2023_7633594,
