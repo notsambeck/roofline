@@ -81,6 +81,7 @@ dataset/
 | `--lr` | 0.001 | Learning rate |
 | `--val-split` | 0.2 | Validation split ratio |
 | `--device` | auto | Device (cuda/mps/cpu) |
+| `--resume` | none | Path to checkpoint to resume training from |
 
 ## Data Augmentation
 

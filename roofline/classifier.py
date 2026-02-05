@@ -50,8 +50,11 @@ class RoofClassifier:
             model_path = Path(__file__).parent.parent / "weights" / "model.pt"
 
         if Path(model_path).exists():
-            state_dict = torch.load(model_path, map_location=self.device, weights_only=True)
-            self.model.load_state_dict(state_dict)
+            checkpoint = torch.load(model_path, map_location=self.device, weights_only=True)
+            if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+                self.model.load_state_dict(checkpoint["model_state_dict"])
+            else:
+                self.model.load_state_dict(checkpoint)
 
         self.model.to(self.device)
         self.model.eval()

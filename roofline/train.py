@@ -76,6 +76,7 @@ def train(
     lr: float = 0.001,
     val_split: float = 0.2,
     device: str | None = None,
+    resume: str | Path | None = None,
 ):
     """Train the RoofNet classifier."""
     # Setup device
@@ -154,24 +155,47 @@ def train(
         optimizer, mode="max", factor=0.5, patience=3
     )
 
-    # Training loop
+    # Resume from checkpoint
+    start_epoch = 0
     best_val_acc = 0.0
-    for epoch in range(epochs):
+    if resume:
+        checkpoint = torch.load(resume, map_location=device, weights_only=True)
+        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+            model.load_state_dict(checkpoint["model_state_dict"])
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            start_epoch = checkpoint["epoch"] + 1
+            best_val_acc = checkpoint["best_val_acc"]
+            print(f"Resumed from epoch {start_epoch} (best val_acc: {best_val_acc:.4f})")
+        else:
+            # Legacy checkpoint: just a state_dict
+            model.load_state_dict(checkpoint)
+            print(f"Loaded model weights from {resume} (no optimizer state, starting fresh)")
+
+    # Training loop
+    for epoch in range(start_epoch, start_epoch + epochs):
         train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
         val_loss, val_acc = validate(model, val_loader, criterion, device)
 
         scheduler.step(val_acc)
 
+        total_epochs = start_epoch + epochs
         print(
-            f"Epoch {epoch + 1:3d}/{epochs} | "
+            f"Epoch {epoch + 1:3d}/{total_epochs} | "
             f"Train Loss: {train_loss:.4f} Acc: {train_acc:.4f} | "
             f"Val Loss: {val_loss:.4f} Acc: {val_acc:.4f}"
         )
 
-        # Save best model
+        # Save best model as full checkpoint
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            torch.save(model.state_dict(), output_path)
+            torch.save({
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "scheduler_state_dict": scheduler.state_dict(),
+                "epoch": epoch,
+                "best_val_acc": best_val_acc,
+            }, output_path)
             print(f"  Saved best model (val_acc: {val_acc:.4f})")
 
     print(f"\nTraining complete. Best validation accuracy: {best_val_acc:.4f}")
@@ -187,6 +211,7 @@ def main():
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
     parser.add_argument("--val-split", type=float, default=0.2, help="Validation split ratio")
     parser.add_argument("--device", type=str, default=None, help="Device (cuda/mps/cpu)")
+    parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume training from")
 
     args = parser.parse_args()
 
@@ -201,6 +226,7 @@ def main():
         lr=args.lr,
         val_split=args.val_split,
         device=args.device,
+        resume=args.resume,
     )
 
 
