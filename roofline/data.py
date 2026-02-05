@@ -1,12 +1,143 @@
 """Dataset utilities for roof type classification."""
 
-import os
+import random
 from pathlib import Path
 from typing import Optional
 
-from PIL import Image
+import numpy as np
+from PIL import Image, ImageDraw
 from torch.utils.data import Dataset
 from torchvision import transforms
+
+
+class RandomShadow:
+    """Apply random shadow (darkened polygon) to image.
+
+    Simulates shadows from buildings, clouds, etc.
+    """
+
+    def __init__(self, p: float = 0.3, max_coverage: float = 0.4, darkness: tuple[float, float] = (0.3, 0.7)):
+        """
+        Args:
+            p: Probability of applying shadow
+            max_coverage: Maximum fraction of image to cover (0-1)
+            darkness: Range of darkness multiplier (0=black, 1=no change)
+        """
+        self.p = p
+        self.max_coverage = max_coverage
+        self.darkness = darkness
+
+    def __call__(self, img: Image.Image) -> Image.Image:
+        if random.random() > self.p:
+            return img
+
+        w, h = img.size
+        img = img.copy()
+
+        # Create shadow mask
+        mask = Image.new("L", (w, h), 255)
+        draw = ImageDraw.Draw(mask)
+
+        # Random coverage for this shadow
+        coverage = random.uniform(0.05, self.max_coverage)
+        target_area = w * h * coverage
+
+        # Generate random polygon points
+        n_points = random.randint(4, 8)
+
+        # Start from a random edge or corner
+        cx = random.randint(0, w)
+        cy = random.randint(0, h)
+
+        points = []
+        for i in range(n_points):
+            angle = 2 * np.pi * i / n_points + random.uniform(-0.5, 0.5)
+            radius = np.sqrt(target_area / np.pi) * random.uniform(0.5, 1.5)
+            px = cx + radius * np.cos(angle)
+            py = cy + radius * np.sin(angle)
+            points.append((px, py))
+
+        # Draw shadow polygon
+        darkness = int(255 * random.uniform(*self.darkness))
+        draw.polygon(points, fill=darkness)
+
+        # Apply mask to darken image
+        img_array = np.array(img).astype(np.float32)
+        mask_array = np.array(mask).astype(np.float32) / 255.0
+        mask_array = mask_array[:, :, np.newaxis]
+
+        result = (img_array * mask_array).astype(np.uint8)
+        return Image.fromarray(result)
+
+
+class RandomTreeOcclusion:
+    """Add random tree-like occlusion (green/dark irregular blobs).
+
+    Simulates tree canopy covering parts of the roof.
+    """
+
+    def __init__(self, p: float = 0.3, max_coverage: float = 0.5, n_blobs: tuple[int, int] = (1, 4)):
+        """
+        Args:
+            p: Probability of applying tree occlusion
+            max_coverage: Maximum fraction of image to cover (0-1)
+            n_blobs: Range for number of tree blobs to add
+        """
+        self.p = p
+        self.max_coverage = max_coverage
+        self.n_blobs = n_blobs
+
+        # Tree-like colors (dark greens, some brown)
+        self.colors = [
+            (34, 85, 34),    # Dark green
+            (45, 90, 39),    # Forest green
+            (55, 100, 45),   # Medium green
+            (30, 70, 30),    # Deep green
+            (60, 80, 40),    # Olive green
+            (40, 60, 35),    # Dark olive
+        ]
+
+    def __call__(self, img: Image.Image) -> Image.Image:
+        if random.random() > self.p:
+            return img
+
+        w, h = img.size
+        img = img.copy()
+        draw = ImageDraw.Draw(img, "RGBA")
+
+        n_blobs = random.randint(*self.n_blobs)
+        coverage_per_blob = self.max_coverage / n_blobs
+
+        for _ in range(n_blobs):
+            # Random center for this blob
+            cx = random.randint(0, w)
+            cy = random.randint(0, h)
+
+            # Random size based on coverage
+            target_area = w * h * random.uniform(0.02, coverage_per_blob)
+            base_radius = np.sqrt(target_area / np.pi)
+
+            # Create irregular blob with multiple overlapping ellipses
+            color = random.choice(self.colors)
+            alpha = random.randint(180, 240)
+
+            n_ellipses = random.randint(3, 7)
+            for _ in range(n_ellipses):
+                # Offset from center
+                ox = cx + random.gauss(0, base_radius * 0.3)
+                oy = cy + random.gauss(0, base_radius * 0.3)
+
+                # Random ellipse size
+                rx = base_radius * random.uniform(0.3, 0.8)
+                ry = base_radius * random.uniform(0.3, 0.8)
+
+                # Slight color variation
+                c = tuple(max(0, min(255, c + random.randint(-15, 15))) for c in color)
+
+                bbox = (ox - rx, oy - ry, ox + rx, oy + ry)
+                draw.ellipse(bbox, fill=(*c, alpha))
+
+        return img.convert("RGB")
 
 
 # Mapping from directory names to class labels
@@ -30,6 +161,8 @@ def get_train_transforms() -> transforms.Compose:
         transforms.RandomVerticalFlip(),
         transforms.RandomRotation(15),
         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+        RandomShadow(p=0.3, max_coverage=0.4),
+        RandomTreeOcclusion(p=0.3, max_coverage=0.5),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         transforms.RandomErasing(p=0.3, scale=(0.02, 0.2), ratio=(0.3, 3.3)),
