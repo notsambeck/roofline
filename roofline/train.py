@@ -18,11 +18,7 @@ def train_epoch(
     optimizer: torch.optim.Optimizer,
     device: torch.device,
 ) -> tuple[float, float]:
-    """Train for one epoch.
-
-    Returns:
-        tuple: (average_loss, accuracy)
-    """
+    """Train for one epoch."""
     model.train()
     total_loss = 0.0
     correct = 0
@@ -51,11 +47,7 @@ def validate(
     criterion: nn.Module,
     device: torch.device,
 ) -> tuple[float, float]:
-    """Validate the model.
-
-    Returns:
-        tuple: (average_loss, accuracy)
-    """
+    """Validate the model."""
     model.eval()
     total_loss = 0.0
     correct = 0
@@ -85,17 +77,7 @@ def train(
     val_split: float = 0.2,
     device: str | None = None,
 ):
-    """Train the RoofNet classifier.
-
-    Args:
-        data_dir: Directory containing training data
-        output_path: Where to save the trained model
-        epochs: Number of training epochs
-        batch_size: Batch size for training
-        lr: Learning rate
-        val_split: Fraction of data to use for validation
-        device: Device to train on (auto-detected if None)
-    """
+    """Train the RoofNet classifier."""
     # Setup device
     if device is None:
         if torch.cuda.is_available():
@@ -129,7 +111,6 @@ def train(
     )
 
     # Apply different transforms to train and val
-    # We need to wrap the datasets to apply transforms
     class TransformDataset:
         def __init__(self, dataset, transform):
             self.dataset = dataset
@@ -139,7 +120,6 @@ def train(
             return len(self.dataset)
 
         def __getitem__(self, idx):
-            # Get the underlying sample
             img_path, class_idx = self.dataset.dataset.samples[self.dataset.indices[idx]]
             from PIL import Image
             img = Image.open(img_path).convert("RGB")
@@ -155,9 +135,10 @@ def train(
 
     print(f"Train size: {train_size}, Val size: {val_size}")
 
-    # Create model
-    model = RoofNet().to(device)
-    print(f"Model parameters: {model.count_parameters():,}")
+    # Create model (ResNet18 with frozen backbone)
+    model = RoofNet(freeze_backbone=True).to(device)
+    print(f"Using ResNet18 backbone (frozen)")
+    print(f"Trainable parameters: {model.count_parameters():,}")
 
     # Loss and optimizer
     criterion = nn.CrossEntropyLoss()
@@ -202,7 +183,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Ensure output directory exists
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

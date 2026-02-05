@@ -30,14 +30,6 @@ class TestRoofNet:
         assert RoofNet.NUM_CLASSES == 4
         assert RoofNet.INPUT_SIZE == 224
 
-    def test_parameter_count(self):
-        """Test parameter count is reasonable (~400K)."""
-        model = RoofNet()
-        params = model.count_parameters()
-
-        # Should be around 400K, allow some variance
-        assert 300_000 < params < 600_000
-
     def test_eval_mode(self):
         """Test model works in eval mode (BatchNorm behavior)."""
         model = RoofNet()

@@ -42,8 +42,8 @@ class RoofClassifier:
                 device = "cpu"
         self.device = torch.device(device)
 
-        # Load model
-        self.model = RoofNet()
+        # Load model (ResNet18 backbone, no need to freeze for inference)
+        self.model = RoofNet(freeze_backbone=False)
 
         if model_path is None:
             # Default to weights/model.pt relative to package root
